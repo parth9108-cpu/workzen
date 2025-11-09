@@ -67,6 +67,24 @@ export function EmployeeTimeOffDashboard({ className }: EmployeeTimeOffDashboard
       return
     }
 
+    // Validate dates
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const startDate = new Date(formData.start_date)
+    const endDate = new Date(formData.end_date)
+
+    // Check if start date is in the past
+    if (startDate < today) {
+      alert('Start date cannot be in the past. Please select today or a future date.')
+      return
+    }
+
+    // Check if end date is before start date
+    if (endDate < startDate) {
+      alert('End date cannot be before start date. Please select a valid date range.')
+      return
+    }
+
     if (!user?.id) {
       alert('User not logged in. Please refresh and try again.')
       return
@@ -202,6 +220,7 @@ export function EmployeeTimeOffDashboard({ className }: EmployeeTimeOffDashboard
                   type="date"
                   value={formData.start_date}
                   onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                   required
                 />
