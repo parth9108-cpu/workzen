@@ -34,18 +34,11 @@ export default function AttendancePage() {
       record => record.employee === user.name && record.date === today
     )
     
-    console.log('Today:', today)
-    console.log('Today Record:', todayRecord)
-    
     if (todayRecord) {
-      const hasCheckedIn = !!todayRecord.checkIn && todayRecord.checkIn !== ''
+      const hasCheckedIn = !!todayRecord.checkIn && todayRecord.checkIn !== '' && todayRecord.checkIn !== '-'
       const hasCheckedOut = !!todayRecord.checkOut && todayRecord.checkOut !== '' && todayRecord.checkOut !== '-'
       
-      console.log('Has Checked In:', hasCheckedIn)
-      console.log('Has Checked Out:', hasCheckedOut)
-      console.log('Check In Time:', todayRecord.checkIn)
-      console.log('Check Out Time:', todayRecord.checkOut)
-      
+      // User is checked in if they have check-in time but no check-out time
       setIsCheckedIn(hasCheckedIn && !hasCheckedOut)
       setTodayAttendanceId(todayRecord.id)
       setCheckInTime(todayRecord.checkIn || '')
@@ -89,45 +82,84 @@ export default function AttendancePage() {
   }
 
   const handleCheckIn = async () => {
-    if (!user) return
+    if (!user) {
+      alert('User not logged in. Please login again.')
+      return
+    }
     
     const now = new Date()
     const today = now.toISOString().split('T')[0]
     const time = now.toTimeString().split(' ')[0].substring(0, 5)
     
     try {
-      // Get user ID from the employees list
-      const employee = await import('@/store/dataStore').then(m => {
-        const store = m.useDataStore.getState()
-        return store.employees.find(emp => emp.name === user.name)
+      // Get user ID - try from user object first, then from employees list
+      let userId = user.id ? parseInt(user.id) : null
+      
+      if (!userId || isNaN(userId)) {
+        // Fetch employees if not loaded
+        const store = useDataStore.getState()
+        if (!store.employees || store.employees.length === 0) {
+          console.log('Fetching employees...')
+          await store.fetchEmployees()
+        }
+        
+        // Find employee by email (more reliable than name)
+        const employee = store.employees.find(emp => emp.email === user.email)
+        
+        console.log('Current user:', user)
+        console.log('All employees:', store.employees.map(e => ({ id: e.id, name: e.name, email: e.email })))
+        console.log('Found employee:', employee)
+        
+        if (!employee || !employee.id) {
+          alert(`User ID not found for ${user.email}. Please contact administrator.`)
+          return
+        }
+        
+        userId = employee.id
+      }
+      
+      console.log('Using user ID:', userId)
+      
+      // Call backend API to mark attendance
+      const response = await fetch('http://localhost:5000/api/attendance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          date: today,
+          status: 'Present',
+          check_in: time
+        })
       })
       
-      const userId = employee?.id || 1
+      const data = await response.json()
       
-      await addAttendance({
-        employeeId: userId,
-        employee: user.name,
-        date: today,
-        checkIn: time,
-        checkOut: '',
-        hours: 0,
-        status: 'Present'
-      })
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to check in')
+      }
       
+      // Update local state
       setIsCheckedIn(true)
       setCheckInTime(time)
+      setTodayAttendanceId(data.data.id)
+      
       alert('Checked in successfully at ' + time)
       
       // Refresh attendance to get the new record
       await fetchAttendance()
     } catch (error: any) {
       console.error('Error checking in:', error)
-      alert('Failed to check in: ' + (error.response?.data?.error || error.message))
+      alert('Failed to check in: ' + error.message)
     }
   }
 
   const handleCheckOut = async () => {
-    if (!user || !todayAttendanceId) return
+    if (!user || !todayAttendanceId) {
+      alert('No check-in record found. Please check in first.')
+      return
+    }
     
     const now = new Date()
     const time = now.toTimeString().split(' ')[0].substring(0, 5)
@@ -144,11 +176,17 @@ export default function AttendancePage() {
         })
       })
       
+      const data = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Failed to check out')
+        throw new Error(data.error || 'Failed to check out')
       }
       
+      // Update local state
       setIsCheckedIn(false)
+      setTodayAttendanceId(null)
+      setCheckInTime('')
+      
       alert('Checked out successfully at ' + time)
       
       // Refresh attendance to show the updated record
