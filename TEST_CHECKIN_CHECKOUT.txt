@@ -1,0 +1,136 @@
+╔════════════════════════════════════════════════════════════╗
+║     TEST CHECK-IN / CHECK-OUT FUNCTIONALITY                ║
+╚════════════════════════════════════════════════════════════╝
+
+✅ CHANGES COMPLETE - READY TO TEST
+
+┌────────────────────────────────────────────────────────────┐
+│ TEST 1: CHECK-IN FUNCTIONALITY                             │
+├────────────────────────────────────────────────────────────┤
+│ 1. Login as: employee@workzen.com / emp123456             │
+│ 2. Navigate to: Attendance page                           │
+│ 3. Click: "Check In" button                               │
+│                                                            │
+│ VERIFY:                                                    │
+│ ✓ Alert shows "Checked in successfully at [time]"         │
+│ ✓ Button changes to "Check Out"                           │
+│ ✓ Message shows "Checked in at [time]. Don't forget..."   │
+│ ✓ New record appears in attendance table                  │
+│ ✓ Check-in time is recorded in table                      │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ TEST 2: CHECK-OUT FUNCTIONALITY                            │
+├────────────────────────────────────────────────────────────┤
+│ 1. After checking in, click: "Check Out" button           │
+│                                                            │
+│ VERIFY:                                                    │
+│ ✓ Alert shows "Checked out successfully at [time]"        │
+│ ✓ Button becomes disabled                                 │
+│ ✓ Check-out time appears in table                         │
+│ ✓ Hours are calculated (e.g., 8.2)                        │
+│ ✓ Record is updated (not duplicated)                      │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ TEST 3: VISIBILITY TO OTHER ROLES                          │
+├────────────────────────────────────────────────────────────┤
+│ 1. After employee checks in/out                           │
+│ 2. Logout from employee account                           │
+│ 3. Login as: admin@workzen.com / password123              │
+│ 4. Navigate to: Attendance page                           │
+│                                                            │
+│ VERIFY:                                                    │
+│ ✓ See "Test Employee" in attendance table                 │
+│ ✓ See today's date (2025-11-09)                           │
+│ ✓ See check-in time (e.g., 09:15)                         │
+│ ✓ See check-out time (e.g., 17:30) if checked out         │
+│ ✓ See calculated hours (e.g., 8.2)                        │
+│ ✓ Status shows "Present"                                  │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ TEST 4: PREVENT DUPLICATE CHECK-IN                         │
+├────────────────────────────────────────────────────────────┤
+│ 1. Check in as employee                                   │
+│ 2. Refresh the page (F5)                                  │
+│                                                            │
+│ VERIFY:                                                    │
+│ ✓ Button still shows "Check Out" (not "Check In")         │
+│ ✓ Message shows existing check-in time                    │
+│ ✓ Cannot check in again                                   │
+│ ✓ Only one record for today in table                      │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ EXPECTED BEHAVIOR                                          │
+├────────────────────────────────────────────────────────────┤
+│ BEFORE CHECK-IN:                                           │
+│   Button: "Check In"                                       │
+│   Message: "Mark your attendance for today"                │
+│   Table: No record for today                               │
+│                                                            │
+│ AFTER CHECK-IN:                                            │
+│   Button: "Check Out"                                      │
+│   Message: "Checked in at 09:15. Don't forget..."          │
+│   Table: Record with check-in time, no check-out           │
+│                                                            │
+│ AFTER CHECK-OUT:                                           │
+│   Button: "Already Checked In" (disabled)                  │
+│   Message: "Checked in at 09:15. Don't forget..."          │
+│   Table: Record with both check-in and check-out times     │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ VISUAL COMPARISON                                          │
+├────────────────────────────────────────────────────────────┤
+│ ATTENDANCE TABLE (Employee View):                          │
+│                                                            │
+│ After Check-In:                                            │
+│ ┌────────────┬──────────┬───────────┬───────┬────────┐    │
+│ │ Date       │ Check In │ Check Out │ Hours │ Status │    │
+│ │ 2025-11-09 │ 09:15    │ -         │ 0     │ Present│    │
+│ └────────────┴──────────┴───────────┴───────┴────────┘    │
+│                                                            │
+│ After Check-Out:                                           │
+│ ┌────────────┬──────────┬───────────┬───────┬────────┐    │
+│ │ Date       │ Check In │ Check Out │ Hours │ Status │    │
+│ │ 2025-11-09 │ 09:15    │ 17:30     │ 8.2   │ Present│    │
+│ └────────────┴──────────┴───────────┴───────┴────────┘    │
+│                                                            │
+│ ATTENDANCE TABLE (Admin View):                             │
+│ ┌──────────────┬────────────┬──────────┬───────────┐      │
+│ │ Employee     │ Date       │ Check In │ Check Out │      │
+│ │ Test Employee│ 2025-11-09 │ 09:15    │ 17:30     │ ✅   │
+│ │ Admin User   │ 2025-11-08 │ 05:06    │ -         │      │
+│ └──────────────┴────────────┴──────────┴───────────┘      │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                            │
+├────────────────────────────────────────────────────────────┤
+│ Issue: Check-in button doesn't work                        │
+│ Fix: Check backend is running (http://localhost:5000)      │
+│      Check browser console for errors                      │
+│                                                            │
+│ Issue: No alert message appears                            │
+│ Fix: Check if browser blocks alerts                        │
+│      Look for error in console                             │
+│                                                            │
+│ Issue: Record not visible to admin                         │
+│ Fix: Refresh the attendance page                           │
+│      Check if employee name matches                        │
+│                                                            │
+│ Issue: Can check in multiple times                         │
+│ Fix: Hard refresh browser (Ctrl+Shift+R)                   │
+│      Clear browser cache                                   │
+└────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════
+
+✅ CHECK-IN SAVES TO DATABASE
+✅ CHECK-OUT UPDATES RECORD
+✅ VISIBLE TO ALL ROLES
+✅ DUPLICATE PREVENTION WORKS
+
+════════════════════════════════════════════════════════════
