@@ -1,5 +1,6 @@
 
 # 🧠 WorkZen HRMS
+## Video link : https://drive.google.com/drive/folders/1SYCjdIkeCbH1TTgvERicHG3TRdSmTQ7H?usp=sharing
 
 ### A Full-Stack Human Resource Management System
 

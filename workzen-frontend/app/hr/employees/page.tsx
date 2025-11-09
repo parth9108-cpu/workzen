@@ -8,7 +8,7 @@ import { EmailModal } from '@/components/EmailModal'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { useDataStore } from '@/store/dataStore'
 import { useAuthStore } from '@/store/authStore'
-import { Plus, Edit2, Trash2, X, Mail, Filter, Download, Upload, MoreVertical, Search } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Mail, Filter, Download, Upload, MoreVertical, Search, Archive } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { userAPI } from '@/lib/api'
 
@@ -25,6 +25,7 @@ export default function HREmployeesPage() {
   const [departments, setDepartments] = useState<any[]>([])
   const [designations, setDesignations] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'basic' | 'private'>('basic')
+  const [showArchived, setShowArchived] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -98,13 +99,16 @@ export default function HREmployeesPage() {
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (employee.employee_id || '').toLowerCase().includes(searchQuery.toLowerCase())
+      employee.email.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesDepartment = !filterDepartment || employee.department === filterDepartment
     const matchesDesignation = !filterDesignation || employee.designation === filterDesignation
     
-    return matchesSearch && matchesDepartment && matchesDesignation
+    // Filter by active/archived status
+    const isActive = (employee as any).is_active !== false // Default to true if not set
+    const matchesStatus = showArchived ? !isActive : isActive
+    
+    return matchesSearch && matchesDepartment && matchesDesignation && matchesStatus
   })
 
   const handleAddEmployee = () => {
@@ -159,16 +163,22 @@ export default function HREmployeesPage() {
     setShowModal(true)
   }
 
-  const handleDelete = async (employeeId: number) => {
-    if (!confirm('Are you sure you want to delete this employee?')) return
+  const handleArchive = async (employeeId: number, isCurrentlyActive: boolean) => {
+    const action = isCurrentlyActive ? 'archive' : 'unarchive'
+    const confirmMessage = isCurrentlyActive 
+      ? 'Are you sure you want to archive this employee? They will be marked as inactive.'
+      : 'Are you sure you want to unarchive this employee? They will be marked as active.'
+    
+    if (!confirm(confirmMessage)) return
     
     try {
-      await userAPI.delete(employeeId)
+      // Toggle is_active status
+      await userAPI.update(employeeId, { is_active: !isCurrentlyActive })
       await fetchEmployees()
-      alert('Employee deleted successfully!')
+      alert(`Employee ${action}d successfully!`)
     } catch (error: any) {
-      console.error('Error deleting employee:', error)
-      alert('Failed to delete employee: ' + (error.response?.data?.error || error.message))
+      console.error(`Error ${action}ing employee:`, error)
+      alert(`Failed to ${action} employee: ` + (error.response?.data?.error || error.message))
     }
   }
 
@@ -319,13 +329,26 @@ export default function HREmployeesPage() {
                 </button>
               </>
             ) : (
-              <button 
-                onClick={handleAddEmployee}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition"
-              >
-                <Plus className="h-5 w-5" />
-                Add Employee
-              </button>
+              <>
+                <button
+                  onClick={() => setShowArchived(!showArchived)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                    showArchived 
+                      ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <Archive className="h-5 w-5" />
+                  {showArchived ? 'Show Active' : 'Show Archived'}
+                </button>
+                <button 
+                  onClick={handleAddEmployee}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add Employee
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -410,11 +433,18 @@ export default function HREmployeesPage() {
                   <Edit2 className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(employee.id)}
-                  className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                  title="Delete Employee"
+                  onClick={() => {
+                    const isActive = (employee as any).is_active !== false
+                    handleArchive(employee.id, isActive)
+                  }}
+                  className={`p-1.5 rounded-lg transition ${
+                    (employee as any).is_active === false
+                      ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                      : 'bg-orange-100 text-orange-600 hover:bg-orange-200'
+                  }`}
+                  title={(employee as any).is_active === false ? 'Unarchive Employee' : 'Archive Employee'}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Archive className="h-4 w-4" />
                 </button>
               </div>
 
