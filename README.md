@@ -227,5 +227,12 @@ Simply start both servers to experience real-time HRMS management.
 
 > **Frontend → Backend → Database — perfectly integrated.**
 
+## 👨‍💻 Contributors
+
+- [Parth Amilkanthwar](https://github.com/parth9108-cpu)  
+- [Snehal Kumbhar](https://github.com/snehal-kumbhar)  
+- [Varun Sakharkar](https://github.com/varunsakharkar)
+
+
 **Happy Coding! 🚀**
 
